@@ -1,0 +1,16 @@
+SELECT
+    fa.application_short_name,
+    cpt.user_concurrent_program_name,
+    cp.*
+FROM
+    apps.fnd_concurrent_programs_tl cpt
+    JOIN apps.fnd_concurrent_programs cp ON cp.concurrent_program_id = cpt.concurrent_program_id
+    JOIN apps.fnd_application fa ON cpt.application_id = fa.application_id
+WHERE
+    1 = 1
+    AND   fa.application_short_name = nvl(:l_application_short_name,fa.application_short_name)
+    AND   cp.concurrent_program_name LIKE nvl(:l_concurrent_program_name,cp.concurrent_program_name)
+    AND   cpt.user_concurrent_program_name LIKE nvl(:l_user_concurrent_program_name,cpt.user_concurrent_program_name)
+    AND   cpt.language = 'US'
+ORDER BY
+    cpt.user_concurrent_program_name
