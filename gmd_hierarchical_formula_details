@@ -1,0 +1,46 @@
+WITH hier AS (
+    SELECT
+        level,
+        DECODE(fmd.line_type,-1,'ingredient',1,'product') line_type,
+        fmd.organization_id,
+        fmd.inventory_item_id,
+        fmd.formula_id,
+        fmd.contribute_yield_ind
+    FROM
+        apps.fm_matl_dtl fmd
+    WHERE
+        1 = 1
+    START WITH
+        fmd.inventory_item_id IN (
+            :b1_item_id,
+            :b2_item_id
+             )
+    CONNECT BY
+--prior is the parent
+     (
+        (
+            PRIOR fmd.line_type = 1
+            AND PRIOR fmd.inventory_item_id = fmd.inventory_item_id
+            AND fmd.line_type =-1
+            AND fmd.contribute_yield_ind = 'Y'
+        )
+        OR (
+            PRIOR fmd.line_type =-1
+            AND PRIOR fmd.contribute_yield_ind = 'Y'
+            AND PRIOR fmd.formula_id = fmd.formula_id
+            AND fmd.line_type = 1
+        )
+    )
+) SELECT
+    frmla.formula_no,
+    frmla.formula_class,
+    frmla.formula_status,
+    item.segment1 item,
+    item.description item_desc,
+    item.item_type,
+    hier.*
+  FROM
+    hier
+    JOIN apps.mtl_system_items_b item ON hier.inventory_item_id = item.inventory_item_id
+                                         AND hier.organization_id = item.organization_id
+    JOIN apps.fm_form_mst_b frmla ON hier.formula_id = frmla.formula_id;
