@@ -1,0 +1,75 @@
+DECLARE
+    v_fnd_user_name            fnd_user.user_name%TYPE;
+    v_error_code               NUMBER(38);
+    v_error_message            VARCHAR2(200);
+BEGIN
+
+    v_fnd_user_name := 'DOEJ';
+
+    FOR usr IN (
+        WITH diff AS (
+            SELECT
+                a.application_short_name,
+                r.responsibility_key
+            FROM
+                fnd_application a
+                JOIN fnd_responsibility r ON a.application_id = r.application_id
+                JOIN fnd_responsibility_tl rt ON r.responsibility_id = rt.responsibility_id
+                AND rt.language = sys_context('USERENV','LANG')
+            WHERE
+                    1 = 1
+                AND
+                    rt.responsibility_name in ('System Administrator', 'System Administration')
+            MINUS
+            SELECT
+                a.application_short_name,
+                r.responsibility_key
+            FROM
+                fnd_user u
+                JOIN fnd_user_resp_groups g ON u.user_id = g.user_id
+                JOIN fnd_application a ON g.responsibility_application_id = a.application_id
+                JOIN fnd_responsibility r ON a.application_id = r.application_id
+                JOIN fnd_responsibility_tl rt ON r.responsibility_id = rt.responsibility_id
+                AND rt.language = sys_context('USERENV','LANG')
+            WHERE
+                    g.responsibility_id = r.responsibility_id
+                AND
+                    u.user_name = v_fnd_user_name
+        ) SELECT
+            diff.application_short_name,
+            diff.responsibility_key
+        FROM
+            diff
+    ) LOOP
+        BEGIN
+            dbms_output.put_line('username => '
+             || v_fnd_user_name
+             || ','
+             || 'resp_app  => '
+             || usr.application_short_name
+             || ','
+             || 'resp_key  => '
+             || usr.responsibility_key
+             || ','
+             || 'security_group => STANDARD');
+
+            fnd_user_pkg.addresp(
+                username         => v_fnd_user_name,
+                resp_app         => usr.application_short_name,
+                resp_key         => usr.responsibility_key,
+                security_group   => 'STANDARD',
+                description      => NULL,
+                start_date       => SYSDATE,
+                end_date         => SYSDATE + 100
+            );
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                v_error_code := sqlcode;
+                v_error_message := sqlerrm;
+                dbms_output.put_line(TO_CHAR(v_error_code) || '- ' || v_error_message);
+        END;
+    END LOOP;
+END;
+/
+
