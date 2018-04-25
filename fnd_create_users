@@ -1,0 +1,43 @@
+DECLARE
+    lc_user_name                VARCHAR2(100);
+    lc_user_password            VARCHAR2(100) := 'Oracle123';
+    ld_user_start_date          DATE := trunc(SYSDATE);
+    ld_user_end_date            VARCHAR2(100) := NULL;
+    ld_password_date            VARCHAR2(100) := TO_DATE('23-JUN-2017');
+    ld_password_lifespan_days   NUMBER := 30;
+    ln_person_id                NUMBER;
+    lc_email_address            VARCHAR2(100);
+    v_error_code                NUMBER(38);
+    v_error_message             VARCHAR2(200);
+BEGIN FOR usr IN (
+    WITH t AS (
+        SELECT
+            --pick through this list
+            'DOEJ' user_name
+        FROM
+            dual
+    ) SELECT
+        regexp_substr(t.val,'[^,]+',1,level)
+      FROM
+        t
+    CONNECT BY
+        regexp_substr(t.val,'[^,]+',1,level) IS NOT NULL
+) LOOP BEGIN
+    dbms_output.put_line(usr.user_name);
+    BEGIN
+        fnd_user_pkg.createuser(x_user_name => lc_user_name,x_owner => NULL,x_unencrypted_password => lc_user_password,x_start_date => ld_user_start_date
+,x_end_date => ld_user_end_date,x_password_date => ld_password_date,x_password_lifespan_days => ld_password_lifespan_days,x_employee_id
+=> ln_person_id,x_email_address => lc_email_address);
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            v_error_code := sqlcode;
+            v_error_message := sqlerrm;
+            dbms_output.put_line(TO_CHAR(v_error_code)
+                                   || '- '
+                                   || v_error_message);
+            end;
+    END loop;
+
+END;
+
