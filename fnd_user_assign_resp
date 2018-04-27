@@ -3,7 +3,7 @@
         v_error_code      NUMBER(38);
         v_error_message   VARCHAR2(200);
     BEGIN
-        v_fnd_user_name := 'XX_KOTHAPALLYM';
+        v_fnd_user_name := 'DOEJ';
 
         BEGIN
             dbms_output.put_line('username => '
