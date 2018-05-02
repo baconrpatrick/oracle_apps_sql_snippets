@@ -1,0 +1,19 @@
+SELECT
+    level dep_level,
+    dd.owner,
+    dd.name,
+    dd.referenced_owner,
+    dd.referenced_name,
+    dd.type,
+    dd.owner
+    || '.'
+    || dd.name object_name,
+    dd.referenced_owner
+    || '.'
+    || dd.referenced_name referenced_object_name
+FROM
+    dba_dependencies dd
+START WITH dd.owner = 'APPS'
+           AND dd.name =:b_object_name CONNECT BY NOCYCLE
+    PRIOR dd.name = dd.referenced_name
+;
