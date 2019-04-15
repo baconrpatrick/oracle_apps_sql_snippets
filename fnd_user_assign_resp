@@ -1,34 +1,67 @@
     DECLARE
-        v_fnd_user_name   fnd_user.user_name%TYPE;
-        v_error_code      NUMBER(38);
-        v_error_message   VARCHAR2(200);
-    BEGIN
-        v_fnd_user_name := 'DOEJ';
-
+    v_error_code      NUMBER(38);
+    v_error_message   VARCHAR2(200);
+    v_fnd_user_name   fnd_table_of_varchar2_30;
+BEGIN
+    v_fnd_user_name := fnd_table_of_varchar2_30('RUBBLEB', 'FLINTSTONEF');
+    FOR a IN 1..v_fnd_user_name.last LOOP 
+        FOR usr IN (
+        WITH diff AS (
+            SELECT
+                a.application_short_name,
+                r.responsibility_key
+            FROM
+                fnd_application      a
+                JOIN fnd_responsibility   r ON a.application_id = r.application_id
+            WHERE
+                1 = 1
+                AND ( r.responsibility_key = ( 'SYSTEM_ADMINISTRATOR' )
+                      OR r.responsibility_key LIKE 'XXCM_DISC%CS' )
+            MINUS
+            SELECT
+                a.application_short_name,
+                r.responsibility_key
+            FROM
+                fnd_user               u
+                JOIN fnd_user_resp_groups   g ON u.user_id = g.user_id
+                JOIN fnd_application        a ON g.responsibility_application_id = a.application_id
+                JOIN fnd_responsibility     r ON a.application_id = r.application_id
+            WHERE
+                g.responsibility_id = r.responsibility_id
+                AND u.user_name = v_fnd_user_name(a)
+        )
+        SELECT
+            diff.application_short_name,
+            diff.responsibility_key
+        FROM
+            diff
+    ) LOOP
         BEGIN
             dbms_output.put_line('username => '
-                                   || v_fnd_user_name
-                                   || ','
-                                   || 'resp_app  => '
-                                   || 'SYSADMIN'
-                                   || ','
-                                   || 'resp_key  => '
-                                   || 'SYSTEM_ADMINISTRATOR'
-                                   || ','
-                                   || 'security_group => STANDARD');
+                                 || v_fnd_user_name(a)
+                                 || ','
+                                 || 'resp_app  => '
+                                 || usr.application_short_name
+                                 || ','
+                                 || 'resp_key  => '
+                                 || usr.responsibility_key
+                                 || ','
+                                 || 'security_group => STANDARD');
 
-            fnd_user_pkg.addresp(username => v_fnd_user_name,resp_app => 'SYSADMIN',resp_key => 'SYSTEM_ADMINISTRATOR',security_group => 'STANDARD',description
-=> NULL,start_date => SYSDATE,end_date => SYSDATE + 100);
+            fnd_user_pkg.addresp(username => v_fnd_user_name(a), resp_app => usr.application_short_name, resp_key => usr.responsibility_key
+
+            , security_group => 'STANDARD', description => NULL, start_date => SYSDATE, end_date => SYSDATE + 100);
 
         EXCEPTION
             WHEN OTHERS THEN
                 v_error_code := sqlcode;
                 v_error_message := sqlerrm;
                 dbms_output.put_line(TO_CHAR(v_error_code)
-                                       || '- '
-                                       || v_error_message);
+                                     || '- '
+                                     || v_error_message);
         END;
+    END LOOP;
+    END LOOP;
 
-    end;
-
+END;
 /
